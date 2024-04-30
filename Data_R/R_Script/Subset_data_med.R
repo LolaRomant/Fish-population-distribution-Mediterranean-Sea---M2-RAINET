@@ -7,7 +7,8 @@ med_metadata_eDNA <- read.csv("Med_metadonnees_ADNe.csv")
 library(lubridate) # pour manipuler les dates/heures
 library(sf) # pour manipuler des données spatiales vectorielles library(amt) # pour l'analyse des données de tracking
 library(mapview) # pour la visualisation interactive des données spatiales library(raster) #pour manipuler les données spatiales raster mapviewOptions(basemaps="OpenStreetMap")
-
+install.packages("webshot")
+library(webshot)
 
 ## subset_data
 
@@ -21,7 +22,6 @@ unique(med_metadata_eDNA$country)
 
 med_metadata_eDNA <- subset(med_metadata_eDNA, 
                             !(country %in% c("Spain", "Italy", "")))
-
 
 ## pour le test, je ne concerve que les échantillons en confinement 
 mtdt_l <- subset(med_metadata_eDNA, lockdown == 1)
@@ -70,4 +70,57 @@ st_crs(mtdt_l) <- 4326
 mapview(start_points, color = "red", cex = 0.7, alpha = 1) +
   mapview(end_points, color = "blue", cex = 0.7, alpha = 1) +
   mapview(mtdt_l, color = "black", alpha = 0.7)
+
+
+
+
+### pour données 2018-2023 : 
+
+mtdt <- med_metadata_eDNA
+
+
+# Créer un objet sf pour les points de départ
+start_points_all <- st_as_sf(mtdt, coords = c("longitude_start_DD", "latitude_start_DD"))
+# Définir le système de coordonnées WGS84 (EPSG:4326) pour les points de départ
+st_crs(start_points_all) <- 4326
+
+
+# Créer un objet sf pour les points d'arrivée
+mtdt <- mtdt[complete.cases(mtdt$longitude_end_DD, mtdt$latitude_end_DD), ]
+end_points_all <- st_as_sf(mtdt, coords = c("longitude_end_DD", "latitude_end_DD"))
+
+# Définir le système de coordonnées WGS84 (EPSG:4326) pour les points d'arrivée
+st_crs(end_points_all) <- 4326
+
+# Afficher les points de départ 
+mapview(start_points_all, color = "red", cex = 0.7, alpha = 1) +
+  # Afficher les points d'arrivée 
+  mapview(end_points_all, color = "blue", cex = 0.7, alpha = 1)
+
+
+
+# Create a new column with the WKT geometry
+mtdt$wkt_geometry <- ifelse(is.na(mtdt$longitude_start_DD) | is.na(mtdt$latitude_start_DD) |
+                                is.na(mtdt$longitude_end_DD) | is.na(mtdt$latitude_end_DD),
+                              paste("POINT(", mtdt$longitude_start_DD, " ", mtdt$latitude_start_DD, ")",
+                                    sep = ""),
+                              paste("LINESTRING(",
+                                    mtdt$longitude_start_DD, " ", mtdt$latitude_start_DD, ", ",
+                                    mtdt$longitude_end_DD, " ", mtdt$latitude_end_DD, ")",
+                                    sep = ""))
+
+
+# Ajouter les transects sur la carte 
+mtdt <- st_as_sf(mtdt, wkt = "wkt_geometry")
+
+# Définir le système de coordonnées WGS84 (EPSG:4326) pour les lignes
+st_crs(mtdt) <- 4326
+
+# Ajouter les transects sur la carte : 
+mapview(start_points_all, color = "red", cex = 0.7, alpha = 1) +
+  mapview(end_points_all, color = "blue", cex = 0.7, alpha = 1) +
+  mapview(mtdt, color = "black", alpha = 0.7)
+
+all_transects_biodivmed <- mapview(mtdt, color = "black", alpha = 0.7)
+
 

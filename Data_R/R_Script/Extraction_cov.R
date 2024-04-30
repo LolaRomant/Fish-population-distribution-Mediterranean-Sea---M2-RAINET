@@ -189,7 +189,7 @@ calcul_moyenne_ligne <- function(valeurs) {
 }
 
 
-## Extraction pour la première bande : posidonia seagrass
+## Extraction 
 # Calculer la moyenne des valeurs par ligne
 moyennes_par_ligne <- sapply(gravity, calcul_moyenne_ligne)
 # Afficher les moyennes
@@ -241,9 +241,40 @@ mtdt_all$dshore <- moyennes_par_ligne
 head(mtdt_all)
 
 
+
+
 ####################################################
-################# Principal Habitat ################
+#################### Bathymetry ####################
 ####################################################
+
+setwd("/Users/apple/Desktop/Covariables/Bathymetry") 
+
+# Charger le raster
+raster_bathy <- raster("bathy_andro_2024_2154_0-100m_20m.tiff")
+raster_bathy <- projectRaster(raster_bathy, crs = "+init=epsg:2154")
+
+# #Attention très lourd à charger car résolution 20m !
+# par(mfrow = c(1, 1))
+# plot(raster_bathy, main = "Bathymetry")
+
+bathy <- extract(raster_bathy, midpoint_buffer, layer = 1)
+
+## Extraction pour la première bande : posidonia seagrass
+# Calculer la moyenne des valeurs par ligne
+moyennes_par_ligne <- sapply(bathy, calcul_moyenne_ligne)
+# Afficher les moyennes
+head(moyennes_par_ligne) 
+# Ajouter une nouvelle colonne à mtdt_all avec les moyennes des valeurs
+mtdt_all$bathy <- moyennes_par_ligne
+# Afficher les premières lignes de mtdt_all pour vérifier
+head(mtdt_all)
+
+
+
+
+###########################################
+#################  Habitat ################
+###########################################
 
 setwd("/Users/apple/Desktop/Covariables/Habitat") 
 
@@ -288,20 +319,42 @@ Global_samplings_habitats <- mapview(start_points, color = "red", cex = 0.7, alp
   # mapview(mtdt_all, color = "black", cex = 0.7, alpha = 0.7) +
   mapview(midpoint_sf, color = "green", cex = 0.7, alpha = 1) +
   mapview(midpoint_buffer, color = "yellow", cex = 0.7, alpha = 0.7) +
-  mapview(habitat_band1) #+ mapview (habitat_band2) + mapview (habitat_band3) + mapview(habitat_band4) + mapview(habitat_band5) + mapview(habitat_band6) + mapview(habitat_band7)
+  mapview(habitat_band3) #+ mapview (habitat_band2) + mapview (habitat_band3) + mapview(habitat_band4) + mapview(habitat_band5) + mapview(habitat_band6) + mapview(habitat_band7)
 
 Global_samplings_habitats
 
 
-## Extraire les valeurs raster pour les buffers de milieux de transect pour chaque bande
+### traduire les surfaces d'habitat en pourcentage de recouvrement par pixel : 
+# Calculer la somme totale des valeurs pour chaque pixel
+total_sum <- habitat_band1 + habitat_band2 + habitat_band3 + habitat_band4 + habitat_band5 + habitat_band6 + habitat_band7
 
-values_bande_1 <- extract(habitat_band1, midpoint_buffer, layer = 1)
-values_bande_2 <- extract(habitat_band2, midpoint_buffer, layer = 1)
-values_bande_3 <- extract(habitat_band3, midpoint_buffer, layer = 1)
-values_bande_4 <- extract(habitat_band4, midpoint_buffer, layer = 1)
-values_bande_5 <- extract(habitat_band5, midpoint_buffer, layer = 1)
-values_bande_6 <- extract(habitat_band6, midpoint_buffer, layer = 1)
-values_bande_7 <- extract(habitat_band7, midpoint_buffer, layer = 1)
+# Calculer le pourcentage de recouvrement par pixel pour chaque bande
+habitat_band1_percent <- (habitat_band1 / total_sum) * 100
+habitat_band2_percent <- (habitat_band2 / total_sum) * 100
+habitat_band3_percent <- (habitat_band3 / total_sum) * 100
+habitat_band4_percent <- (habitat_band4 / total_sum) * 100
+habitat_band5_percent <- (habitat_band5 / total_sum) * 100
+habitat_band6_percent <- (habitat_band6 / total_sum) * 100
+habitat_band7_percent <- (habitat_band7 / total_sum) * 100
+
+
+## Extraire les valeurs raster (%) pour les buffers de milieux de transect pour chaque bande
+values_bande_1 <- extract(habitat_band1_percent, midpoint_buffer, layer = 1)
+values_bande_2 <- extract(habitat_band2_percent, midpoint_buffer, layer = 1)
+values_bande_3 <- extract(habitat_band3_percent, midpoint_buffer, layer = 1)
+values_bande_4 <- extract(habitat_band4_percent, midpoint_buffer, layer = 1)
+values_bande_5 <- extract(habitat_band5_percent, midpoint_buffer, layer = 1)
+values_bande_6 <- extract(habitat_band6_percent, midpoint_buffer, layer = 1)
+values_bande_7 <- extract(habitat_band7_percent, midpoint_buffer, layer = 1)
+
+# ## Extraire les valeurs raster pour les buffers de milieux de transect pour chaque bande
+# values_bande_1 <- extract(habitat_band1, midpoint_buffer, layer = 1)
+# values_bande_2 <- extract(habitat_band2, midpoint_buffer, layer = 1)
+# values_bande_3 <- extract(habitat_band3, midpoint_buffer, layer = 1)
+# values_bande_4 <- extract(habitat_band4, midpoint_buffer, layer = 1)
+# values_bande_5 <- extract(habitat_band5, midpoint_buffer, layer = 1)
+# values_bande_6 <- extract(habitat_band6, midpoint_buffer, layer = 1)
+# values_bande_7 <- extract(habitat_band7, midpoint_buffer, layer = 1)
 
 
 # Fonction pour calculer la moyenne en prenant en compte les valeurs NA
@@ -316,6 +369,7 @@ values_bande_7 <- extract(habitat_band7, midpoint_buffer, layer = 1)
    }
  }
  
+ 
  ## Extraction pour la première bande : posidonia seagrass
  # Calculer la moyenne des valeurs par ligne
  moyennes_par_ligne <- sapply(values_bande_1, calcul_moyenne_ligne)
@@ -325,7 +379,6 @@ values_bande_7 <- extract(habitat_band7, midpoint_buffer, layer = 1)
  mtdt_all$posidonia_seagrass <- moyennes_par_ligne
  # Afficher les premières lignes de mtdt_all pour vérifier
  head(mtdt_all)
- 
  
 
 ## Extraction pour la seconde bande : coralligeneous 
@@ -355,7 +408,7 @@ mtdt_all$sand <- moyennes_bande_4
 head(mtdt_all)
 
 
-## Extraction pour la troisième bande : dead matte 
+## Extraction pour la cinquième bande : dead matte 
 # Calculer la moyenne des valeurs par ligne pour la bande 5
 moyennes_bande_5 <- sapply(values_bande_5, calcul_moyenne_ligne)
 # Ajouter une nouvelle colonne à mtdt_all avec les moyennes des valeurs pour la bande 5
@@ -364,7 +417,7 @@ mtdt_all$dead_matte <- moyennes_bande_5
 head(mtdt_all)
 
 
-## Extraction pour la troisième bande : other seagrass 
+## Extraction pour la sixième bande : other seagrass 
 # Calculer la moyenne des valeurs par ligne pour la bande 6
 moyennes_bande_6 <- sapply(values_bande_6, calcul_moyenne_ligne)
 # Ajouter une nouvelle colonne à mtdt_all avec les moyennes des valeurs pour la bande 6
@@ -373,13 +426,31 @@ mtdt_all$other_seagrass <- moyennes_bande_6
 head(mtdt_all)
 
 
-## Extraction pour la troisième bande : other seagrass 
+## Extraction pour la septième bande : other seagrass 
 # Calculer la moyenne des valeurs par ligne pour la bande 7
 moyennes_bande_7 <- sapply(values_bande_7, calcul_moyenne_ligne)
 # Ajouter une nouvelle colonne à mtdt_all avec les moyennes des valeurs pour la bande 7
 mtdt_all$infralitoral_algae <- moyennes_bande_7
 # Afficher les premières lignes de mtdt_all pour vérifier
 head(mtdt_all)
+
+
+# ## vérif pourcentage new colonne 
+# # Créer un nouveau raster pour stocker les pourcentages de recouvrement cumulés
+# cumulative_raster <- habitat_band1_percent
+# 
+# # Ajouter les pourcentages de recouvrement des autres bandes de manière cumulative
+# cumulative_raster[] <- habitat_band1_percent[] +
+#   habitat_band2_percent[] +
+#   habitat_band3_percent[] +
+#   habitat_band4_percent[] +
+#   habitat_band5_percent[] +
+#   habitat_band6_percent[] +
+#   habitat_band7_percent[]
+# # Afficher les valeurs uniques du raster cumulatif pour vérifier qu'elles atteignent bien 100%
+# unique_values <- unique(cumulative_raster[])
+# # Afficher les valeurs uniques
+# print(unique_values)
 
 
 ## Nouvelle colonne habitat principal
@@ -401,28 +472,43 @@ mtdt_all$habitat_principal <- max_col_name
 head(mtdt_all)
 
 
-## Nouvelle colonne nombre d'habitats 
 
+## Nouvelle colonne nombre d'habitats 
 # Sélection des colonnes d'habitat
 habitat_cols <- mtdt_all[, grep("^posidonia_seagrass|^coralligeneous|^rocks|^sand|^dead_matte|^other_seagrass|^infralitoral_algae$", names(mtdt_all))]
-str(habitat_cols)
-
-# Afficher le type des colonnes restantes
-sapply(habitat_cols, class)
-
-# Convertir les colonnes en numérique
-#habitat_cols <- as.data.frame(lapply(habitat_cols, as.numeric))
 
 # Remplacer les valeurs NA par 0 dans habitat_cols
 habitat_cols[is.na(habitat_cols)] <- 0
 
-# Calculer le nombre d'habitats
-mtdt_all$nb_habitat <- ifelse(mtdt_all$nb_habitat == 0, NA, mtdt_all$nb_habitat)
+# Calculer le nombre d'habitats pour chaque ligne
+mtdt_all$nb_habitat <- rowSums(habitat_cols > 0, na.rm = TRUE)
 
+# Pour les lignes où aucune valeur d'habitat n'est supérieure à 0, définir nb_habitat à NA
+mtdt_all$nb_habitat[mtdt_all$nb_habitat == 0] <- NA
+
+# Afficher les premières lignes du dataframe avec la nouvelle colonne nb_habitat
 head(mtdt_all)
+
+
+## Nouvelle colonne indice de diversité des habitats (indice de Shannon)
+# Calculer la proportion de chaque type d'habitat parmi les habitats totaux
+habitat_props <- as.matrix(habitat_cols) / rowSums(habitat_cols, na.rm = TRUE)
+
+# Remplacer les valeurs NA par 0 dans habitat_props
+habitat_props[is.na(habitat_props)] <- 0
+
+# Calculer l'indice de diversité de Shannon pour chaque ligne
+mtdt_all$shannon_habitat <- apply(habitat_props, 1, function(x) {
+  -sum(x * log(x + (x == 0)))
+})
+
+# Afficher les premières lignes du dataframe avec la nouvelle colonne shannon_index
+head(mtdt_all)
+
+
 
 
 ##### RESULTATS FINAUX #####
 # Enregistrer en XLSX
-library(openxlsx)
-write.xlsx(mtdt_all, "mtdt_all.xlsx")
+# library(openxlsx)
+# write.xlsx(mtdt_all, "mtdt_all.xlsx")
